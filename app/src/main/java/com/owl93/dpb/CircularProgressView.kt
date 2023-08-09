@@ -5,10 +5,13 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
+import android.view.MotionEvent
+import android.view.MotionEvent.INVALID_POINTER_ID
 import android.view.View
 import android.view.animation.*
 import androidx.core.content.ContextCompat
 import kotlin.math.*
+
 
 fun View.getBoundaries(bounds: RectF) {
     bounds.let {
@@ -62,6 +65,12 @@ class CircularProgressView: View {
         it.flags = Paint.ANTI_ALIAS_FLAG
     }
 
+    private var carryoverStrokePaint = Paint().also{
+        it.style = Paint.Style.STROKE
+        it.strokeCap = Paint.Cap.ROUND
+        it.flags = Paint.ANTI_ALIAS_FLAG
+    }
+
     private var trackPaint = Paint().also {
         it.style = Paint.Style.STROKE
         it.flags = Paint.ANTI_ALIAS_FLAG
@@ -91,7 +100,12 @@ class CircularProgressView: View {
             postInvalidate()
             //Log.d(TAG, "set strokeColor: $value")
         }
-
+    var strokeCarryoverColor: Int = DEFAULT_STROKE_COLOR
+        set(value) {
+            field = value
+            postInvalidate()
+            //Log.d(TAG, "set strokeColor: $value")
+        }
     private var strokeGradientMode = false
     var gradientStartColor: Int = 0
         set(value) {
@@ -316,6 +330,7 @@ class CircularProgressView: View {
         val attrs = context.theme.obtainStyledAttributes(attributeSet, R.styleable.CircularProgressView, 0, 0)
 
         try {
+            strokeCarryoverColor = attrs.getColor(R.styleable.CircularProgressView_strokeCarryoverColor, DEFAULT_STROKE_COLOR)
             maxValue = attrs.getFloat(R.styleable.CircularProgressView_maxValue, DEFAULT_MAX_VALUE)
             strokeWidth = attrs.getDimension(R.styleable.CircularProgressView_strokeWidth, DEFAULT_STROKE_WIDTH)
             strokeColor = attrs.getColor(R.styleable.CircularProgressView_strokeColor, DEFAULT_STROKE_COLOR)
@@ -517,6 +532,8 @@ class CircularProgressView: View {
     }
 
 
+
+
     override fun onDraw(canvas: Canvas?) {
         if(canvas == null) return
         determineGradientStatus()
@@ -529,9 +546,15 @@ class CircularProgressView: View {
             it.shader =  if(strokeGradientMode) strokeShader else null
         }
 
+        carryoverStrokePaint.let {
+            it.color = strokeCarryoverColor
+            it.strokeWidth = strokeWidth
+            it.shader = null
+        }
         var degrees = (_progress/maxValue) * 360f
         if(direction == Direction.CCW) degrees *= -1
-        val startingAngle = -90f + startingAngle
+        val startingAngleStroke = -90f + startingAngle
+        val startingAngleCarryover = (-90f + progress * 3.6).toFloat()
         val maxStroke = if(drawTrack) max(strokeWidth, trackWidth) else strokeWidth
         if(drawTrack){
             trackPaint.let {
@@ -554,7 +577,19 @@ class CircularProgressView: View {
             bounds.top + maxStroke/2,
             bounds.right - maxStroke/2,
             bounds.bottom - maxStroke/2,
-            startingAngle, degrees, false, strokePaint
+            startingAngleStroke, degrees, false, strokePaint
+        )
+
+
+
+        //draw carryover
+
+        canvas.drawArc(
+            bounds.left + maxStroke/2,
+            bounds.top + maxStroke/2,
+            bounds.right - maxStroke/2,
+            bounds.bottom - maxStroke/2,
+            startingAngleCarryover  , degrees, false, carryoverStrokePaint
         )
 
         if(textEnabled) {
@@ -608,6 +643,10 @@ class CircularProgressView: View {
         isAnimating = true
         //Log.d(TAG, "isAnimating: $isAnimating")
         animationListener?.onAnimationStart(toValue, _progress)
+    }
+
+    fun onStrokeClick(onClickListener: OnClickListener){
+
     }
 
 
