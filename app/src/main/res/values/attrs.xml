@@ -12,8 +12,10 @@
         </attr>
 
         <attr name="progress" format="float"/>
+        <attr name="carryover" format="float"/>
         <attr name="startingAngle" format="integer"/>
         <attr name="drawTrack" format="boolean"/>
+        <attr name="drawCarryover" format="boolean"/>
         <attr name="trackColor" format="color"/>
         <attr name="trackWidth" format="dimension"/>
         <attr name="trackAlpha" format="integer"/>

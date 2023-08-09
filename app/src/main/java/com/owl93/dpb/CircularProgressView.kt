@@ -53,6 +53,7 @@ class CircularProgressView: View {
 
     private var _progress: Float = DEFAULT_MAX_VALUE
 
+
     private var bounds: RectF = RectF()
     private var minDimen = 0f
     private var textWidth = 0f
@@ -162,6 +163,13 @@ class CircularProgressView: View {
             //Log.d(TAG, "set drawTrack: $value")
         }
 
+    var drawCarryover: Boolean = false
+        set(value) {
+            field = value
+            postInvalidate()
+            //Log.d(TAG, "set drawTrack: $value")
+        }
+
     var trackColor: Int = DEFAULT_STROKE_COLOR
         set(value) {
             field = value
@@ -207,6 +215,15 @@ class CircularProgressView: View {
                 postInvalidate()
                 //Log.d(TAG, "set progress: $value")
             } else Log.w(TAG, "can't set progress when animating")
+        }
+
+    var carryover: Float = 0f
+        set(value) {
+
+                field = value
+
+                postInvalidate()
+                //Log.d(TAG, "set progress: $value")
         }
 
     var startingAngle: Int = DEFAULT_STARTING_ANGLE
@@ -330,6 +347,8 @@ class CircularProgressView: View {
         val attrs = context.theme.obtainStyledAttributes(attributeSet, R.styleable.CircularProgressView, 0, 0)
 
         try {
+
+            drawCarryover = attrs.getBoolean(R.styleable.CircularProgressView_drawCarryover, false)
             strokeCarryoverColor = attrs.getColor(R.styleable.CircularProgressView_strokeCarryoverColor, DEFAULT_STROKE_COLOR)
             maxValue = attrs.getFloat(R.styleable.CircularProgressView_maxValue, DEFAULT_MAX_VALUE)
             strokeWidth = attrs.getDimension(R.styleable.CircularProgressView_strokeWidth, DEFAULT_STROKE_WIDTH)
@@ -357,6 +376,7 @@ class CircularProgressView: View {
             else StrokeGradient.VIEW
 
             progress = attrs.getFloat(R.styleable.CircularProgressView_progress, DEFAULT_MAX_VALUE/2)
+            carryover = attrs.getFloat(R.styleable.CircularProgressView_carryover, 0f)
             startingAngle = attrs.getInt(R.styleable.CircularProgressView_startingAngle, DEFAULT_STARTING_ANGLE) % 360
             text = attrs.getString(R.styleable.CircularProgressView_text)
             textEnabled = attrs.getBoolean(R.styleable.CircularProgressView_textEnabled, !text.isNullOrEmpty())
@@ -571,7 +591,6 @@ class CircularProgressView: View {
                 0f, 360f, false, trackPaint)
 
         }
-
         canvas.drawArc(
             bounds.left + maxStroke/2,
             bounds.top + maxStroke/2,
@@ -583,14 +602,16 @@ class CircularProgressView: View {
 
 
         //draw carryover
-
-        canvas.drawArc(
-            bounds.left + maxStroke/2,
-            bounds.top + maxStroke/2,
-            bounds.right - maxStroke/2,
-            bounds.bottom - maxStroke/2,
-            startingAngleCarryover  , degrees, false, carryoverStrokePaint
-        )
+        if(drawCarryover) {
+            val degreesCarry = (carryover/maxValue) * 360f
+            canvas.drawArc(
+                bounds.left + maxStroke/2,
+                bounds.top + maxStroke/2,
+                bounds.right - maxStroke/2,
+                bounds.bottom - maxStroke/2,
+                startingAngleCarryover, degreesCarry, false, carryoverStrokePaint
+            )
+        }
 
         if(textEnabled) {
             val text = text ?: formatText()
